@@ -1,0 +1,27 @@
+body {
+  font-family: Roboto;
+  font-size: 11pt;
+  margin: 0;
+  padding: 0;
+}
+
+nav {
+  background-color: #4a148c;
+  color: #fff;
+  padding: 0.2em 0.2m 0 0.2em;
+}
+
+.navbar-brand {
+  font-size: 1.5em;
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+nav ul li {
+  display: inline-block;
+  padding: 0.1em 0.5em 0 0.5em;
+  border-bottom: #fff solid thick;
+}

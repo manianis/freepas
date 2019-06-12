@@ -7,13 +7,114 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Free Pascal IDE</title>
 
-    <link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css">
-    <script src="node_modules/codemirror/lib/codemirror.js"></script>
+    <meta name="theme-color" content="#4a148c">
+
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/codemirror.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    <textarea id="editor"></textarea>
-    <script src="node_modules/codemirror/mode/pascal/pascal.js"></script>
+    <nav>
+        <span class="navbar-brand">FreePascal IDE</span>
+
+        <ul>
+            <li>p01.pas</li>
+            <li>p02.pas</li>
+            <li>p03.pas</li>
+        </ul>
+    </nav>
+
+    <textarea id="editor">program nomimation;
+
+type
+    tab = array [1..20] of string[10];
+
+function Verif(ch:string):boolean;
+Var v : boolean; i : integer;
+begin
+    v := Length(ch) = 10;
+    i := 1;
+    while (v) and (i <= Length(ch)) do 
+    begin 
+    v :=ch[i] in ['A'..'Z']; 
+    i :=i + 1; end; 
+    Verif :=v; 
+end; 
+
+procedure remplir(var nom : tab; var n : integer); 
+Var i : integer; 
+begin 
+    repeat 
+        Write('Donner le nombre de produits [3, 20] : ');
+        Readln(n);
+    until n in [3..20];
+    
+    for i:=1 to n do
+    begin
+        repeat
+            Write(' Donner le nom du produit n°', i, ' : ' ); Readln(nom[i]); until Verif(nom[i]); end; end; procedure
+    Affichage(tp : tab; n : integer); Var i : integer; begin Writeln('Les ', n, ' propositions à utiliser sont : ');
+    for i:=1 to n do
+    begin
+        if i > 1 then write(' - ');
+        Write(tp[i]);
+    end;
+end;
+
+function perm_spirale(ch : string):string;
+Var i, j : integer;
+    ch1 : string;
+begin
+    ch1 := '';
+    i := 1; j := Length(ch);
+    while (i < j) do
+    begin
+        ch1 := ch1 + ch[j] + ch[i];
+        i := i + 1;
+        j := j - 1;
+    end;
+    if (i = j) then ch1 := ch1 + ch[i];
+    perm_spirale := ch1;
+end;
+
+procedure spirale(nom : tab; n : integer);
+var p, i : integer;
+    ch : string;
+    tp : tab;
+begin
+    repeat
+        Write(' Donner l''indice du caractere [1, 10] : ');
+        Readln(p);
+    until p in [3..20];
+    
+    (* Former ch en concaténant le Pième caractere de chaque nom*)
+    ch := '';
+    for i:=1 to n do 
+        ch := ch + nom[i][p];
+        
+    (*Générer dans TP les n propositions *)
+    tp[1] := ch;
+    
+    for i:=2 to n do
+    begin
+        tp[i] := perm_spirale(tp[i-1]);
+    end;
+    
+    affichage(tp, n);
+end;
+
+var nom : tab;
+    n : integer;
+begin
+    remplir(nom, n);
+    spirale(nom, n);
+end.
+</textarea>
+
+    <script src="js/codemirror.js"></script>
+    <script src="js/pascal.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
