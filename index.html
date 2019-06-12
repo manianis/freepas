@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Free Pascal IDE</title>
+
+    <link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css">
+    <script src="node_modules/codemirror/lib/codemirror.js"></script>
+</head>
+
+<body>
+    <textarea id="editor"></textarea>
+    <script src="node_modules/codemirror/mode/pascal/pascal.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            var myCodeMirror = CodeMirror.fromTextArea(document.querySelector("#editor"), {
+                lineNumbers: true,
+            });
+        });
+    </script>
+</body>
+
+</html>

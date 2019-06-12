@@ -1,4 +1,5 @@
 var exec = require('child_process').exec;
+var child_process = require('child_process');
 var process = require('process');
 var path = require('path');
 var fs = require('fs');
@@ -48,6 +49,7 @@ FilesCollection.prototype.addFile = function (file) {
     path: filepath,
     dirname: dirname,
     filename: filename,
+    extension: extension,
     exists: fs.existsSync(filepath),
     isSource: ['.pas', '.pp'].includes(extension)
   };
@@ -83,11 +85,26 @@ CompilerOutput.prototype.setOutput = function (out) {
   const outl = out.split(os.EOL);
   this.errors = [];
   this.has_errors = false;
+  this.outcome_ext = '';
+  this.linking_ok = false;
   for (let line of outl) {
     if (line == '') continue;
     const err = this.parseLine(line);
-    if (err.type == 'error') this.has_errors = true;
+    if (err.type == 'error') {
+      if (err.subtype == 'compile' && err.message == "Compilation aborted") {
+        this.linking_ok = false;
+        this.outcome_ext = '';
+      }
+      this.has_errors = true;
+    }
+    if (err.type == 'operation' && err.operation == 'Linking') {
+      this.outcome_ext = '.exe';
+      this.linking_ok = true;
+    }
     this.errors.push(err);
+  }
+  if (!this.hasErrors() && this.outcome_ext == '') {
+    this.outcome_ext = '.ppu';
   }
 };
 
@@ -107,6 +124,7 @@ CompilerOutput.prototype.parseLine = function (line) {
       column: parseInt(m[3]),
       level: m[4],
       type: 'error',
+      subtype: 'file',
       message: m[5]
     };
     return errObj;
@@ -121,6 +139,7 @@ CompilerOutput.prototype.parseLine = function (line) {
     }
     const errObj = {
       type: 'error',
+      subtype: 'compile',
       level: m[1],
       message: m[2]
     };
@@ -164,7 +183,6 @@ function Compiler(path, fileCompiledCallback) {
   this.path = path;
   this.files = new FilesCollection();
   this.fileCompiledCallback = fileCompiledCallback || function () { };
-  this.allFilesCompiledCallback = fileCompiledCallback || function () { };
   this.outputs = {};
 }
 
@@ -176,11 +194,21 @@ Compiler.prototype.compile = function () {
 };
 
 Compiler.prototype.compiled = function (file) {
+  if (this.outputs[file.path].outcome_ext == '') {
+    file.comp_result = null;
+  } else if (this.outputs[file.path].outcome_ext != '') {
+    file.comp_result = file.path.substr(0, file.path.length - file.extension.length) + this.outputs[file.path].outcome_ext;
+    console.log(file.comp_result);
+    if (!fs.existsSync(file.comp_result)) {
+      file.comp_result = null;
+    }
+  }
+  console.log('Generated', file.comp_result);
   this.files_count++;
-  this.fileCompiledCallback(file, this.files_count, this.files.count());
+  this.fileCompiledCallback(this, file, this.files_count, this.files.count());
 
   if (this.files_count == this.files.count()) {
-    this.fileCompiledCallback();
+    this.fileCompiledCallback(this);
   }
 };
 
@@ -205,10 +233,69 @@ Compiler.prototype.compileFile = function (file) {
   })
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////
+
+function ProgramLauncher(filepath) {
+  if (!filepath.endsWith(".exe")) {
+    throw new Error("Cannot launch process of this type!");
+  }
+  this.filepath = filepath;
+  this.inputfile = null;
+  this.proc = null;
+}
+
+ProgramLauncher.prototype.setInputFile = function(inputfile) {
+  this.inputfile = inputfile;
+};
+
+ProgramLauncher.prototype.launch = function() {
+  if (!fs.existsSync(this.filepath)) {
+    throw new Error(`File not found "${this.filepath}"`);
+  }
+  if (!this.isLaunched()) {
+    this.proc = child_process.spawn(this.filepath, (this.inputfile) ? [`<"${this.inputfile}"`] : [], {
+      detached: true,
+      shell: true
+    });
+    this.proc.on('close', () => {
+      this.proc = null;
+    });
+  } else {
+    throw new Error("Process is already launched, kill before relaunching.");
+  }
+};
+
+ProgramLauncher.prototype.isLaunched = function() {
+  return (this.proc && !this.proc.killed);
+};
+
+ProgramLauncher.prototype.kill = function() {
+  if (this.isLaunched()) {
+    this.proc.kill();
+  }
+};
+
+let FPC = "C:\\lazarus\\fpc\\3.0.4\\bin\\i386-win32\\fpc.exe";
+// let FPC = "D:\\Lazarus\\fpc\\3.0.4\\bin\\x86_64-win64\\fpc.exe";
+
 // Tests
-compiler = new Compiler("D:\\Lazarus\\fpc\\3.0.4\\bin\\x86_64-win64\\fpc.exe", function (file, cp, cnt) {
+compiler = new Compiler(FPC, function (compiler, file, cp, cnt) {
   if (file) {
-    console.log('Compiled', cp, 'out of', cnt);
+    console.log('Compiled', cp, 'out of', cnt, ':', file.path);
+    if (compiler.outputs[file.path].hasErrors()) {
+      console.log('Has errors!');
+    } else {
+      console.log(compiler.outputs[file.path].outcome_ext);
+      if (file.comp_result && file.comp_result.endsWith('.exe')) {
+        pl = new ProgramLauncher(file.comp_result);
+        try {
+          pl.launch();
+        }
+        catch (e) {
+          console.log(e);
+        }
+      }
+    }
   } else {
     console.log('All files compiled!');
   }
@@ -220,20 +307,4 @@ compiler.files.addFile('.\\pp03.pas');
 compiler.files.addFile('.\\pp04.pas');
 compiler.files.addFile('.\\pp05.pas');
 
-//compiler.compile(".\\pp01.pas");
-//compiler.compile("pp02.pas");
-//compiler.compile(".\\pp03.pas");
-compiler.compile(() => {
-  console.log(compiler.outputs);
-});
-
-/*
-compiler.files.addFile('.\\pp01.pas');
-compiler.files.addFile("pp02.pas");
-compiler.files.addFile(".\\pp03.pas");
-compiler.files.addFile('.\\pp0x.pas');
-
-compiler.files.addFiles('.\\pp04.pas', '.\\pp05.pas');
-
-console.log(compiler.files);
-*/
+compiler.compile();

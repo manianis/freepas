@@ -1,0 +1,27 @@
+{
+  "name": "freepascalide",
+  "version": "1.0.0",
+  "description": "Free Pascal IDE",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manianis/freepas.git"
+  },
+  "keywords": [
+    "Free",
+    "Pascal",
+    "IDE"
+  ],
+  "author": "Mohamed Anis MANI",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/manianis/freepas/issues"
+  },
+  "homepage": "https://github.com/manianis/freepas#readme",
+  "dependencies": {
+    "codemirror": "^5.47.0"
+  }
+}
